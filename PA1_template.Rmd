@@ -7,19 +7,121 @@ output:
 
 
 ## Loading and preprocessing the data
+```{r}
+data<-read.csv(unz("activity.zip","activity.csv"),stringsAsFactors=FALSE)
+#data<-read.csv(unz("activity.zip","activity.csv"))
+data$interval<-as.character(data$interval)
 
 
+data$interval<-sapply(X=data$interval,function(time)
+  
+{
+  
+  if (nchar(time)==1)
+    paste("00",":0",time,sep="")
+  else if (nchar(time)==2)
+    paste("00:",time,sep="")
+  else if (nchar(time)==3)
+    paste("0",substr(time,1,1),":",substr(time,2,3),sep="")
+  else if(nchar(time)==4)
+    paste(substr(time,1,2),":",substr(time,3,4),sep="")
+  
+  
+}
+)
 
+
+library(lubridate)
+
+data$newdate<-paste(data$date,data$interval,sep=" ")
+
+#data$newdate<-as.Date(strptime(data$newdate,format="%Y-%m-%d %H:%M"))
+
+processeddata<-data[complete.cases(data),]
+```
 ## What is mean total number of steps taken per day?
+```{r}
+avgsteps<-tapply(processeddata$steps,processeddata$date,FUN=sum)
+print(avgsteps)
+```
 
+## histogram of the total number of steps taken each day
+```{r}
+hist(avgsteps)
+```
+
+## Calculate and report the mean and median of the total number of steps taken per day
+```{r}
+meanavgsteps<-tapply(processeddata$steps,processeddata$date,FUN=mean)
+print(meanavgsteps)
+
+medianavgsteps<-tapply(processeddata$steps,processeddata$date,FUN=median)
+print(medianavgsteps)
+
+```
 
 
 ## What is the average daily activity pattern?
+```{r}
+avgsteps1<-tapply(processeddata$steps,processeddata$interval,FUN=mean)
+library(ggplot2)
 
+dfavgsteps<-data.frame(levels(factor(processeddata$interval)),avgsteps1)
+colnames(dfavgsteps)<-c("interval","steps")
+test$interval<-strptime(dfavgsteps$interval,format="%H:%M")
+library(scales)
+p<-ggplot(dfavgsteps,aes(x=interval,y=steps,group=1))+geom_line()+scale_x_datetime(labels = date_format("%H:%M"))
 
+print(p)
 
+```
 ## Imputing missing values
 
+## Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+```{r}
+print(nrow(data)-nrow(processeddata))
+```
 
+## filling in all of the missing values in the dataset using the mean for that particular interval
+```{r}
+newdata<-data
+
+for(i  in 1:nrow(data))
+{
+  
+  if (is.na(data$steps[i])) {newdata$steps[i]<-mean(data$steps[data$interval==data$interval[i]],na.rm=TRUE)}
+}
+    
+summary(newdata)
+
+
+```
+## histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day
+```{r}
+avgsteps<-tapply(newdata$steps,newdata$date,FUN=sum)
+print(avgsteps)
+hist(avgsteps)
+
+meanavgsteps<-tapply(newdata$steps,newdata$date,FUN=mean)
+print(meanavgsteps)
+
+medianavgsteps<-tapply(newdata$steps,newdata$date,FUN=median)
+print(medianavgsteps)
+
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+newdata$isweekend=sapply(as.Date(newdata$date),function(x){
+  if(weekdays(x)=="Sunday" || weekdays(x)=="Saturday")
+    "weekend"
+  else
+    "weekday"  
+})
+levels(newdata$isweekend)<-factor(newdata$isweekend)
+newdata$interval<-strptime(newdata$interval,format="%H:%M")
+library(plyr)
+mm <- ddply(newdata, c("isweekend","interval"), summarise, mmpg = mean(steps))
+newplot<-ggplot(mm, aes(x = interval,y=mmpg)) +geom_line()+scale_x_datetime(labels = date_format("%H:%M"))+facet_grid(.~isweekend)
+print(newplot)
+```
