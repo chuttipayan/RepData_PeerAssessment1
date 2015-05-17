@@ -321,8 +321,8 @@ library(plyr)
 ```
 
 ```r
-mm <- ddply(newdata, c("isweekend","interval"), summarise, mmpg = mean(steps))
-newplot<-ggplot(mm, aes(x = interval,y=mmpg)) +geom_line()+scale_x_datetime(labels = date_format("%H:%M"))+facet_grid(.~isweekend)
+mm <- ddply(newdata, c("isweekend","interval"), summarise, averagesteps = mean(steps))
+newplot<-ggplot(mm, aes(x = interval,y=averagesteps)) +geom_line()+scale_x_datetime(labels = date_format("%H:%M"))+facet_grid(.~isweekend)
 print(newplot)
 ```
 
